@@ -1,0 +1,25 @@
+When a user types www.foobar.com in their browser, the browser first requests the DNS server over port 443 using TCP, and the DNS server forwards the request to the IP address of the load balancer.
+The load balancer, which is HAProxy, receives the incoming traffic and distributes it across three application servers using a round-robin algorithm.
+Round-robin sends the first request to Server A, the second to Server B, the third to Server C, and then repeats this cycle.
+This balances the traffic, prevents any one server from being overloaded, and makes the service more reliable.
+
+This time each server has a local firewall, and there is also a perimeter firewall and an internal database firewall to control traffic and protect the network.
+The load balancer has the SSL certificate for www.foobar.com
+, which allows all client traffic to be encrypted over HTTPS.
+Encrypting traffic ensures confidentiality, integrity, and authentication so that users know they are communicating securely with the correct website.
+
+Inside each server, Nginx checks the requested domain and forwards requests to the application server, which handles the application logic and communicates with the MySQL database.
+The Primary MySQL database handles all write operations, while Replica databases receive a continuous copy of the data and serve read queries.
+The purpose of the replicas is to reduce load on the Primary and improve read performance.
+After the application server generates the HTML response, Nginx sends it back to the load balancer, which then returns it to the user's browser.
+
+Monitoring clients are installed on each application server.
+These clients collect metrics such as CPU, memory, disk usage, Nginx logs, and application statistics, then send this data to a central monitoring service like Sumo Logic or Prometheus.
+To monitor web server QPS (queries per second), the monitoring client can parse Nginx access logs or collect metrics from Nginx's stub_status endpoint, then forward them to the central system for alerting and dashboards.
+
+Even with these improvements, there are still issues.
+Terminating SSL at the load balancer means that traffic between the load balancer and the backend servers may be unencrypted unless re-encryption is used, which could be a security risk.
+Having only one MySQL server capable of accepting writes is a single point of failure, since if the Primary database goes down, write operations cannot occur.
+Finally, having servers with all the same components (database, web server, and application server) can cause resource contention, make scaling difficult, and increase the risk that a single compromise affects multiple services.
+
+Even though this infrastructure is secured, encrypted, and monitored, careful planning for redundancy, TLS between the load balancer and app servers, database failover, and scaling is still required for production environments.
