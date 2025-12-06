@@ -1,0 +1,41 @@
+In this scenario, just like before, the user types in www.foobar.com in their browser, then the browser requests the DNS server over port 443 using TCP and the DNS server forwards it to the related IP address.
+
+This time, instead of a single server processing every request, the load balancer, which is HAProxy, receives the incoming traffic and distributes it across two servers.
+
+The load balancer is configured with a distribution algorithm (like round-robin), which simply sends the first request to Server A and the second to Server B, and this process repeats itself.
+
+This helps balance the traffic and prevents one machine from overloading, making the services more stable.
+
+This is an Active-Active setup on the application layer because both servers are active.
+
+The difference between Active-Passive is that only one server actively serves traffic while the other waits to take over in case of failure.
+
+Inside each server, Nginx again checks the requested domain and forwards the request to the application server.
+
+The application code then communicates with the Primary-Replica (Master-Slave) MySQL database.
+
+The Primary database handles all write operations, while the Replica database receives a continuous copy of the data from the Primary and uses it for read queries.
+
+The whole purpose of the Replica is to reduce traffic load and increase performance.
+
+The application writes to the Primary and can send read operations to the Replica.
+
+After generating the HTML response, the application server sends the page back to Nginx, andNginx sends it to HAProxy.
+
+HAProxy then returns it to the user's browser.
+
+However, even this infrastructure has flaws.
+
+For example, if the load balancer goes down, the entire site becomes unreachable.
+
+Additionally, if the Primary database fails, write operations will not occur.
+
+These two issues are called SPOF (Single Points of Failure).
+
+There are also security issues, as this setup does not include a firewall, leaving all ports exposed, and without HTTPS, connections can easily be intercepted by a third party.
+
+Finally, this system has no monitoring, so if a server becomes slow, if the Primary database has replication lag, or if HAProxy cannot reach a backend, nobody will know until the website breaks.
+
+Even though this setup is much more reliable compared to a single-server setup, these issues still limit its real-world production use.
+
+Adding redundancy to the load balancer, implementing proper firewalls and HTTPS, and using monitoring tools would make this infrastructure more reliable.
